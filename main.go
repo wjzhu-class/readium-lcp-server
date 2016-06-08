@@ -163,6 +163,8 @@ func HandleSignals() {
 func s3ConfigFromYAML(in *yaml.File) storage.S3Config {
 	config := storage.S3Config{}
 
+	config.PublicURL, _ = in.Get("storage.public_url")
+
 	config.Id, _ = in.Get("storage.access_id")
 	config.Secret, _ = in.Get("storage.token")
 	config.Token, _ = in.Get("storage.secret")

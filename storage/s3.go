@@ -11,7 +11,7 @@ import (
 )
 
 type s3store struct {
-	bucket string
+	config S3Config
 	client *s3.S3
 }
 
@@ -26,12 +26,12 @@ func (i s3item) Key() string {
 }
 
 func (i s3item) PublicUrl() string {
-	return fmt.Sprintf("http://%s/%s/%s", i.store.client.Endpoint, i.bucket, i.key)
+	return fmt.Sprintf("http://%s/%s", i.store.config.PublicURL, i.bucket, i.key)
 }
 
 func (i s3item) Contents() (io.ReadCloser, error) {
 	resp, err := i.store.client.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(i.store.bucket),
+		Bucket: aws.String(i.store.config.Bucket),
 		Key:    aws.String(i.key),
 	})
 
@@ -40,27 +40,27 @@ func (i s3item) Contents() (io.ReadCloser, error) {
 
 func (s *s3store) Add(key string, r io.ReadSeeker) (Item, error) {
 	_, err := s.client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(s.bucket),
+		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
 		Body:   r,
 	})
 
-	item := s3item{bucket: s.bucket, key: key, store: s}
+	item := s3item{bucket: s.config.Bucket, key: key, store: s}
 
 	return item, err
 }
 
 func (s *s3store) Get(key string) (Item, error) {
 	_, err := s.client.HeadObject(&s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
+		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
 	})
-	return s3item{bucket: s.bucket, key: key, store: s}, err
+	return s3item{bucket: s.config.Bucket, key: key, store: s}, err
 }
 
 func (s *s3store) Remove(key string) error {
 	_, err := s.client.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(s.bucket),
+		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(key),
 	})
 
@@ -69,7 +69,7 @@ func (s *s3store) Remove(key string) error {
 
 func (s *s3store) List() ([]Item, error) {
 	objects, err := s.client.ListObjects(&s3.ListObjectsInput{
-		Bucket: aws.String(s.bucket),
+		Bucket: aws.String(s.config.Bucket),
 	})
 
 	if err != nil {
@@ -79,13 +79,15 @@ func (s *s3store) List() ([]Item, error) {
 	var items []Item
 
 	for _, o := range objects.Contents {
-		items = append(items, s3item{bucket: s.bucket, key: *o.Key, store: s})
+		items = append(items, s3item{bucket: s.config.Bucket, key: *o.Key, store: s})
 	}
 
 	return items, nil
 }
 
 type S3Config struct {
+	PublicURL string
+
 	Bucket   string
 	Endpoint string
 	Region   string
@@ -105,5 +107,5 @@ func S3(config S3Config) (Store, error) {
 		S3ForcePathStyle: aws.Bool(config.ForcePathStyle),
 		Region:           aws.String(config.Region),
 		Endpoint:         aws.String(config.Endpoint)}))
-	return &s3store{client: client, bucket: config.Bucket}, nil
+	return &s3store{client: client, config: config}, nil
 }
