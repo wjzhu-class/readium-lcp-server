@@ -166,8 +166,8 @@ func s3ConfigFromYAML(in *yaml.File) storage.S3Config {
 	config.PublicURL, _ = in.Get("storage.public_url")
 
 	config.Id, _ = in.Get("storage.access_id")
-	config.Secret, _ = in.Get("storage.token")
-	config.Token, _ = in.Get("storage.secret")
+	config.Secret, _ = in.Get("storage.secret")
+	config.Token, _ = in.Get("storage.token")
 
 	config.Endpoint, _ = in.Get("storage.endpoint")
 	config.Bucket, _ = in.Get("storage.bucket")
