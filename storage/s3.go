@@ -101,11 +101,12 @@ type S3Config struct {
 }
 
 func S3(config S3Config) (Store, error) {
-	client := s3.New(session.New(&aws.Config{
+	c := &aws.Config{
 		Credentials:      credentials.NewStaticCredentials(config.Id, config.Secret, config.Token),
 		DisableSSL:       aws.Bool(config.DisableSSL),
 		S3ForcePathStyle: aws.Bool(config.ForcePathStyle),
 		Region:           aws.String(config.Region),
-		Endpoint:         aws.String(config.Endpoint)}))
+		Endpoint:         aws.String(config.Endpoint)}
+	client := s3.New(session.New(c.WithLogLevel(aws.LogDebug)))
 	return &s3store{client: client, config: config}, nil
 }
